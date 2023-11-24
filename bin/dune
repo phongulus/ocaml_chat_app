@@ -1,0 +1,5 @@
+(executable
+ (public_name ocaml_chat_app)
+ (name main)
+ (libraries ocaml_chat_app core async)
+ (preprocess (pps ppx_yojson_conv ppx_jane)))
