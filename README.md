@@ -46,4 +46,4 @@ The app is agnostic to the text encoding of the messages themselves - the messag
 
 - Only messages on one line can be sent. Pasting multiline messages into the command line will just result in multiple single-line messages being sent. If somehow a multiline message makes it into the JSON payload, the receiving side will be unable to decode the message (a warning will be shown to the recipient) and won't send any acknowledgment.
 - The communications between server and client are not encrypted in any way. The JSON payloads are sent verbatim.
-- It's possible that the chat app receives and displays a "phantom" message acknowledgment. This is outside normal operation, and can happen if some rogue remote partner sends a correctly formatted acknowledgment JSON. This is because t
+- It's possible that the chat app receives and displays a "phantom" message acknowledgment. This is outside normal operation, and can happen if the app receives a rogue but correctly formatted acknowledgment JSON. This is because the app currently does not store any information about messages already sent.
