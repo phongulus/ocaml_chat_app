@@ -15,4 +15,4 @@
  (name ocaml_chat_app)
  (synopsis "OCaml Chat App")
  (description "Simple one-on-one chat app written in OCaml. Ahrefs test task.")
- (depends ocaml dune yojson core async ppx_yojson_conv ppx_jane))
+ (depends ocaml dune core async ppx_yojson_conv ppx_jane))

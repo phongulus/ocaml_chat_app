@@ -1,2 +1,5 @@
 (library
- (name ocaml_chat_app))
+ (name ocaml_chat_app)
+ (wrapped false)
+ (libraries core async)
+ (preprocess (pps ppx_yojson_conv ppx_jane)))

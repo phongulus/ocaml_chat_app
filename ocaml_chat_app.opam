@@ -9,7 +9,6 @@ bug-reports: "https://github.com/phongulus/ocaml_chat_app/issues"
 depends: [
   "ocaml"
   "dune" {>= "3.6"}
-  "yojson"
   "core"
   "async"
   "ppx_yojson_conv"
