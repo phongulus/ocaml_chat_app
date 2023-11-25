@@ -12,7 +12,7 @@ let () =
   Command.run @@ Command.async
     ~summary:"Ahrefs Test Task: Chat App"
       (let%map_open.Command mode =
-        anon ("state" %: string)
+        anon ("mode" %: string)
         and name = flag "-name" (optional_with_default "Anonymous" string)
           ~doc:"Name of the client. Defaults to 'Anonymous'. Unused when running as a server."
         and host = flag "-addr" (optional_with_default "127.0.0.1" string)
