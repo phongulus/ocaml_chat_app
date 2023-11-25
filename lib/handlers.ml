@@ -16,8 +16,7 @@ let rec send_handler ~state =
           Writer.write_line
             writer
             (Msg (!(state.msg_number),
-                  Int63.to_string @@
-                    Time_ns.to_int63_ns_since_epoch (Time_ns.now ()),
+                  Int63.to_string Time_ns.(to_int63_ns_since_epoch (now ())),
                   line) |> yojson_of_msg |> Yojson.Safe.to_string);
           Out_channel.print_endline @@
             state.my_name ^ " #" ^ string_of_int !(state.msg_number) ^ " > " ^ line;
@@ -43,12 +42,13 @@ let rec recv_handler ~state ~mode ~reader ~writer =
     | Client ->
         Out_channel.print_endline "[Server disconnected, exiting now.]");
     let%bind _ = Reader.close reader in Writer.close writer
+
   (* Read something from the remote server/client. Decode and respond. *)
   | `Ok line ->
-    let msg = try msg_of_yojson (Yojson.Safe.from_string line) with
+    let msg = try Yojson.Safe.from_string line |> msg_of_yojson with
       | _ -> Err "[Invalid message received, I can't decode this.]" in
     (match msg with
-    | Acc n -> 
+    | Acc n ->
         (match mode with
         | Client -> Out_channel.print_endline @@
             "[Server \"" ^ n ^ "\" accepted connection! You can start chatting now.]";
@@ -59,8 +59,8 @@ let rec recv_handler ~state ~mode ~reader ~writer =
     | Ack (i, t) -> Out_channel.print_endline @@
         "[Message #" ^ string_of_int i ^ " acknowledged." ^
         " Roundtrip time: " ^
-          string_of_float (Int63.(to_float @@
-            (Time_ns.to_int63_ns_since_epoch (Time_ns.now ()) - of_string t)) /. 1000000.)
+          string_of_float
+            (Int63.(Time_ns.(to_int63_ns_since_epoch (now ())) - of_string t |> to_float) /. 1000000.)
           ^ " ms]"
     | Msg (i, t, s) ->
         if i <> !(state.msg_number)
