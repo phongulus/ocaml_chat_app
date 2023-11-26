@@ -19,7 +19,7 @@ let rec send_handler ~state =
                   Int63.to_string Time_ns.(to_int63_ns_since_epoch (now ())),
                   line) |> yojson_of_msg |> Yojson.Safe.to_string);
           Out_channel.print_endline @@
-            state.my_name ^ " #" ^ string_of_int !(state.msg_number) ^ " > " ^ line;
+            !(state.my_name) ^ " #" ^ string_of_int !(state.msg_number) ^ " > " ^ line;
           incr state.msg_number
       | None -> Out_channel.print_endline
           "[No connection established. Ignoring message.]");
@@ -38,7 +38,7 @@ let rec recv_handler ~state ~mode ~reader ~writer =
           "[Client disconnected, waiting for new connection.]";
         state.current_conn_writer := None;
         state.msg_number := 1;
-        state.partner_name := "Anonymous";
+        state.partner_name := "Client";
     | Client ->
         Out_channel.print_endline "[Server disconnected, exiting now.]");
     let%bind _ = Reader.close reader in Writer.close writer
@@ -78,7 +78,7 @@ let rec recv_handler ~state ~mode ~reader ~writer =
         Out_channel.print_endline @@
           "[Client \"" ^ n ^ "\" connected! You can start chatting now.]";
         state.partner_name := n;
-        Acc state.my_name
+        Acc !(state.my_name)
           |> yojson_of_msg
           |> Yojson.Safe.to_string
           |> Writer.write_line writer

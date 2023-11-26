@@ -15,7 +15,7 @@ type mode = Server | Client
    to both the user input handler and the TCP connection instance with
    the message receipt handler. This will allow the two to communicate. *)
 type state = {
-  my_name: string;
+  my_name: string ref;
   partner_name: string ref;
   current_conn_writer: Writer.t option ref;
   msg_number: int ref;
