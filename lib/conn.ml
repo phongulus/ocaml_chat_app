@@ -38,7 +38,7 @@ let run_client ~state ~host ~port =
         (Tcp.Where_to_connect.of_host_and_port { host; port })
         (fun _ r w ->
           Out_channel.print_endline "\n[Reached server! Waiting for server to accept connection request...]";
-          Writer.write_line w (Con !(state.my_name) |> yojson_of_msg |> Yojson.Safe.to_string);
+          send_maybe w (Con !(state.my_name));
           recv_handler ~state ~mode:Client ~reader:r ~writer:w))
     (fun e ->
       match Monitor.extract_exn e with

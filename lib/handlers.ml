@@ -2,6 +2,19 @@ open Core
 open Async
 open Types
 
+(** Attempt to write to the provided writer. We note that we don't
+    need to handle anything in particular if the writer is closed.
+    Async should have already closed the associated reader, signalling
+    a disconnect, by the next recv_handler deferred. *)
+let send_maybe w msg =
+  match msg with
+  | Err e -> Out_channel.print_endline e (* Don't send errors. *)
+  | _ ->
+    if Writer.is_open w
+    then yojson_of_msg msg |> Yojson.Safe.to_string |> Writer.write_line w
+    else Out_channel.print_endline
+      "[Warning: the writer is closed. The remote server/client may have disconnected.]"
+
 (** Deferred responsible for input reading and sending messages.
     Dispatches message to client if connected. *)
 let rec send_handler ~state =
@@ -13,11 +26,9 @@ let rec send_handler ~state =
     else begin
       (match !(state.current_conn_writer) with
       | Some writer ->
-          Writer.write_line
-            writer
-            (Msg (!(state.msg_number),
-                  Int63.to_string Time_ns.(to_int63_ns_since_epoch (now ())),
-                  line) |> yojson_of_msg |> Yojson.Safe.to_string);
+          Msg (!(state.msg_number),
+              Int63.to_string Time_ns.(to_int63_ns_since_epoch (now ())),
+              line) |> send_maybe writer;
           Out_channel.print_endline @@
             !(state.my_name) ^ " #" ^ string_of_int !(state.msg_number) ^ " > " ^ line;
           incr state.msg_number
@@ -70,17 +81,11 @@ let rec recv_handler ~state ~mode ~reader ~writer =
         Out_channel.print_endline @@
           !(state.partner_name) ^ " #" ^ string_of_int current_msg_number ^ " > " ^ s;
         state.msg_number := current_msg_number + 1;
-        Ack (current_msg_number, t)
-          |> yojson_of_msg
-          |> Yojson.Safe.to_string
-          |> Writer.write_line writer;
+        Ack (current_msg_number, t) |> send_maybe writer;
     | Con n ->
         Out_channel.print_endline @@
           "[Client \"" ^ n ^ "\" connected! You can start chatting now.]";
         state.partner_name := n;
-        Acc !(state.my_name)
-          |> yojson_of_msg
-          |> Yojson.Safe.to_string
-          |> Writer.write_line writer
+        Acc !(state.my_name) |> send_maybe writer;
     | Err e -> Out_channel.print_endline e);
     recv_handler ~state ~mode ~reader ~writer
