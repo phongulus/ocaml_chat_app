@@ -15,6 +15,14 @@ let send_maybe w msg =
     else Out_channel.print_endline
       "[Warning: the writer is closed. The remote server/client may have disconnected.]"
 
+(** Update message number in reference when receiving a Msg or Ack. Reset to 0 if needed. *)
+let update_msg_number msg_number_ref i =
+  if i - !msg_number_ref = 1 || i - !msg_number_ref = 0 then
+    msg_number_ref := i
+  else
+    (Out_channel.print_endline @@ "[Warning: message number out of order. Updating.]";
+    msg_number_ref := max i !msg_number_ref)
+
 (** Deferred responsible for input reading and sending messages.
     Dispatches message to client if connected. *)
 let rec send_handler ~state =
@@ -26,12 +34,12 @@ let rec send_handler ~state =
     else begin
       (match !(state.current_conn_writer) with
       | Some writer ->
+          incr state.msg_number;
           Msg (!(state.msg_number),
               Int63.to_string Time_ns.(to_int63_ns_since_epoch (now ())),
               line) |> send_maybe writer;
           Out_channel.print_endline @@
             !(state.my_name) ^ " #" ^ string_of_int !(state.msg_number) ^ " > " ^ line;
-          incr state.msg_number
       | None -> Out_channel.print_endline
           "[No connection established. Ignoring message.]");
       send_handler ~state
@@ -48,7 +56,7 @@ let rec recv_handler ~state ~mode ~reader ~writer =
         Out_channel.print_endline
           "[Client disconnected, waiting for new connection.]";
         state.current_conn_writer := None;
-        state.msg_number := 1;
+        state.msg_number := 0;
         state.partner_name := "Client";
     | Client ->
         Out_channel.print_endline "[Server disconnected, exiting now.]");
@@ -67,21 +75,20 @@ let rec recv_handler ~state ~mode ~reader ~writer =
             state.current_conn_writer := Some writer
         | Server -> Out_channel.print_endline
             "[Warning: server received accept connection message, which is supposed to be for clients only. Ignoring.]")
-    | Ack (i, t) -> Out_channel.print_endline @@
-        "[Message #" ^ string_of_int i ^ " acknowledged." ^
-        " Roundtrip time: " ^
-          string_of_float
-            (Int63.(Time_ns.(to_int63_ns_since_epoch (now ())) - of_string t |> to_float) /. 1000000.)
-          ^ " ms]"
+    | Ack (i, t) ->
+        update_msg_number state.msg_number i;
+        (try
+          let roundtrip = string_of_float @@
+            Int63.(Time_ns.(to_int63_ns_since_epoch (now ())) - of_string t |> to_float) /. 1000000. in
+          Out_channel.print_endline @@
+            "[Message #" ^ string_of_int i ^ " acknowledged. Roundtrip time: " ^ roundtrip ^ " ms]"
+        with _ -> Out_channel.print_endline @@
+          "[Warning: message #" ^ string_of_int i ^ " acknowledgment received but invalid roundtrip time.]")
     | Msg (i, t, s) ->
-        if i <> !(state.msg_number)
-        then Out_channel.print_endline @@
-          "[Warning: message #" ^ string_of_int i ^ " received out of order. Updating.]";
-        let current_msg_number = max i !(state.msg_number) in
+        update_msg_number state.msg_number i;
         Out_channel.print_endline @@
-          !(state.partner_name) ^ " #" ^ string_of_int current_msg_number ^ " > " ^ s;
-        state.msg_number := current_msg_number + 1;
-        Ack (current_msg_number, t) |> send_maybe writer;
+          !(state.partner_name) ^ " #" ^ string_of_int !(state.msg_number) ^ " > " ^ s;
+        Ack (!(state.msg_number), t) |> send_maybe writer;
     | Con n ->
         Out_channel.print_endline @@
           "[Client \"" ^ n ^ "\" connected! You can start chatting now.]";

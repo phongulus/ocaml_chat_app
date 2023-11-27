@@ -24,7 +24,7 @@ let () =
           my_name = ref name;
           partner_name = ref "";
           current_conn_writer = ref None;
-          msg_number = ref 1;} in
+          msg_number = ref 0;} in
         Deferred.any [send_handler ~state;
           match mode with
           | "server" -> run_server ~state ~port
