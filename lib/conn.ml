@@ -24,7 +24,7 @@ let run_server ~state ~port =
           Out_channel.print_endline
             "\n[Someone's already here! Try another port? Exiting now.]";
           shutdown 0;
-      | _ ->
+      | e ->
           Out_channel.print_endline "\nSomething went wrong... Here's the error:";
           Out_channel.print_endline @@ Exn.to_string e;
           Out_channel.print_endline "Exiting now."; shutdown 1)
@@ -44,7 +44,7 @@ let run_client ~state ~host ~port =
       match Monitor.extract_exn e with
       | Unix.Unix_error (Unix.Error.ECONNREFUSED, _, _) ->
           Out_channel.print_endline "\n[Server refused connection. Is it online? Exiting now.]"; shutdown 0;
-      | _ ->
+      | e ->
           Out_channel.print_endline "\nSomething went wrong... Here's the error:";
           Out_channel.print_endline @@ Exn.to_string e;
           Out_channel.print_endline "Exiting now."; shutdown 1)
