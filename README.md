@@ -58,3 +58,4 @@ The app is agnostic to the text encoding of the messages themselves - the messag
 - If the message numbers received are out of order, the app will simply update to the highest one received so far. No effort will be made to retrieve missing messages if any.
 - The message number might overflow if somehow the server and client can accumulate ~4.6 quintillion messages between the two of them. The number will simply flip to negative in that case.
 - The app displays a special error for when the port is already occupied (server instance) or when the host refused connection (client instance). As for other connection errors (timeouts, host name cannot be found, etc.), it will display a more generic "Something went wrong" along with the exception in question.
+- Currently, the only way for the server and client to disconnect from each other is to exit. Quitting the server makes the client quit as well. Quitting the client won't close the server though.
