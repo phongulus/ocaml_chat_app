@@ -75,6 +75,15 @@ let rec recv_handler ~state ~mode ~reader ~writer =
             state.current_conn_writer := Some writer
         | Server -> Out_channel.print_endline
             "[Warning: server received accept connection message, which is supposed to be for clients only. Ignoring.]")
+    | Con n ->
+      (match mode with
+      | Server -> Out_channel.print_endline @@
+          "[Client \"" ^ n ^ "\" connected! You can start chatting now.]";
+          state.partner_name := n;
+          state.current_conn_writer := Some writer;
+          Acc !(state.my_name) |> send_maybe writer;
+      | Client -> Out_channel.print_endline @@
+          "[Warning: client received connection request, which is supposed to be for servers only. Ignoring.]")
     | Ack (i, t) ->
         update_msg_number state.msg_number i;
         (try
@@ -89,10 +98,5 @@ let rec recv_handler ~state ~mode ~reader ~writer =
         Out_channel.print_endline @@
           !(state.partner_name) ^ " #" ^ string_of_int !(state.msg_number) ^ " > " ^ s;
         Ack (!(state.msg_number), t) |> send_maybe writer;
-    | Con n ->
-        Out_channel.print_endline @@
-          "[Client \"" ^ n ^ "\" connected! You can start chatting now.]";
-        state.partner_name := n;
-        Acc !(state.my_name) |> send_maybe writer;
     | Err e -> Out_channel.print_endline e);
     recv_handler ~state ~mode ~reader ~writer
